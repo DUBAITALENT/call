@@ -1,0 +1,82 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Driver Contact Directory</title>
+<style>
+body{font-family:Arial,sans-serif;max-width:700px;margin:30px auto;padding:16px;color:#222}
+input{box-sizing:border-box;width:100%;padding:12px;margin:12px 0;border:1px solid #ccc;border-radius:8px}
+.card{border:1px solid #ddd;border-radius:10px;padding:16px;margin:14px 0}
+a.call{display:inline-block;background:#16834a;color:white;padding:11px 18px;border-radius:7px;text-decoration:none}
+a.name{font-weight:bold;color:#075fc7}
+.small{color:#666;font-size:14px}
+</style>
+</head>
+<body>
+<h2>Available Drivers</h2>
+<p>Search candidates and contact them directly.</p>
+<input id="search" placeholder="Search candidate name...">
+<div id="list">Loading candidates...</div>
+<script>
+async function start(){
+  const list=document.getElementById("list");
+  const search=document.getElementById("search");
+  try{
+    const r=await fetch("/candidates.json");
+    if(!r.ok) throw Error();
+    const data=await r.json();
+    const params=new URLSearchParams(location.search);
+    const id=params.get("id");
+    const selected=data.find(c=>c.id===id);
+    if(id){
+      if(!selected){list.textContent="Candidate not found.";return;}
+      document.title=selected.name+" - Contact";
+      list.innerHTML="";
+      const card=document.createElement("div");
+      card.className="card";
+      const h=document.createElement("h2");
+      h.textContent=selected.name;
+      const p=document.createElement("p");
+      p.className="small";
+      p.textContent=selected.details||"Driver candidate";
+      const a=document.createElement("a");
+      a.className="call";
+      a.href="tel:"+selected.phone.replace(/[^\d+]/g,"");
+      a.textContent="Call Now";
+      card.append(h,p,a);
+      list.append(card);
+      return;
+    }
+    function render(){
+      list.innerHTML="";
+      const term=search.value.toLowerCase();
+      data.filter(c=>(c.name+" "+(c.details||"")).toLowerCase().includes(term))
+      .forEach(c=>{
+        const card=document.createElement("div");
+        card.className="card";
+        const a=document.createElement("a");
+        a.className="name";
+        a.href="/?id="+encodeURIComponent(c.id);
+        a.textContent=c.name;
+        const p=document.createElement("p");
+        p.className="small";
+        p.textContent=c.details||"Driver candidate";
+        const call=document.createElement("a");
+        call.className="call";
+        call.href="tel:"+c.phone.replace(/[^\d+]/g,"");
+        call.textContent="Call Now";
+        card.append(a,p,call);
+        list.append(card);
+      });
+      if(!list.children.length) list.textContent="No candidates found.";
+    }
+    search.addEventListener("input",render);
+    render();
+  }catch(e){list.textContent="Candidate list could not load. Please try again."}
+}
+start();
+</script>
+</body>
+</html>
